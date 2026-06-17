@@ -142,14 +142,56 @@ def test_build_graph_marks_installed_true():
     """
     assert bool(g.query(q))
 
-def test_main_writes_ttl(tmp_path):
+INSTALL_TREE = os.path.join(os.path.dirname(__file__), "fixtures",
+                            "install_tree", "software")
+
+
+def _reset_eb():
+    indexer.configure_easybuild()
+    indexer._CONFIGURED = False
+
+
+def test_main_indexes_install_tree(tmp_path):
     out = tmp_path / "modchef.ttl"
-    rc = indexer.main(["--repo", FIX, "--output", str(out)])
+    try:
+        rc = indexer.main(["--installed-root", INSTALL_TREE, "--output", str(out)])
+    finally:
+        _reset_eb()
     assert rc == 0
-    assert out.exists()
     g = Graph()
     g.parse(str(out), format="turtle")
-    assert len(list(g.subjects(RDF.type, schema.MC.Module))) >= 3
+    # R-bundle-CRAN is indexed as installed, with its ext ggplot2 (ecosystem r)
+    q = """
+    PREFIX mc: <https://modchef.dev/schema#>
+    ASK { ?m mc:name "R-bundle-CRAN" ; mc:installed true ; mc:providesPackage ?p .
+          ?p mc:name "ggplot2" ; mc:ecosystem "r" . }
+    """
+    assert bool(g.query(q))
+    # the reprod/ copy must NOT be indexed as a module
+    q2 = """
+    PREFIX mc: <https://modchef.dev/schema#>
+    ASK { ?m mc:name "zlib" . }
+    """
+    assert not bool(g.query(q2))
+
+
+def test_parse_bundle_without_options_param():
+    # a plain 'Bundle' easyblock has no 'options' param; the import-name logic
+    # must not choke on it and drop the whole module (regression).
+    path = os.path.join(INSTALL_TREE, "R-bundle-CRAN", "2023.12-foss-2023a",
+                        "easybuild", "R-bundle-CRAN-2023.12-foss-2023a.eb")
+    facts = indexer.parse_easyconfig(path)
+    assert ("ggplot2", "r") in facts.packages
+
+
+def test_main_uses_robot_repo_for_robot_path(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(indexer, "configure_easybuild",
+                        lambda robot_paths=None: calls.append(robot_paths))
+    out = tmp_path / "o.ttl"
+    indexer.main(["--installed-root", INSTALL_TREE, "--robot-repo", "/robots",
+                  "--output", str(out)])
+    assert "/robots" in calls
 
 def test_configure_easybuild_sets_robot_path(tmp_path):
     from easybuild.tools.config import build_option
