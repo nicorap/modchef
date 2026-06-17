@@ -170,6 +170,7 @@ def cook(graph, ingredients, pinned_toolchain=None, full=False):
     """Assign ingredients to the fewest compatible toolchain clusters."""
     # 1. candidate lookup
     cand = {}
+    full_cand = {}
     unresolved = []
     needs_install = []
     for ing in ingredients:
@@ -181,6 +182,7 @@ def cook(graph, ingredients, pinned_toolchain=None, full=False):
         available = [m for m in c if not m.installed]
         if installed:
             cand[ing] = installed
+            full_cand[ing] = c
         elif available:
             needs_install.append((ing, available))
         else:
@@ -232,5 +234,10 @@ def cook(graph, ingredients, pinned_toolchain=None, full=False):
 
     # rank clusters: largest first (best result = single cluster)
     clusters.sort(key=lambda c: -len(c.modules))
+
+    unification = None
+    if len(clusters) > 1:
+        unification = _unify(graph, full_cand)
+
     return CookResult(clusters=clusters, unresolved=unresolved,
-                      needs_install=needs_install)
+                      needs_install=needs_install, unification=unification)
