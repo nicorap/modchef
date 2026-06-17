@@ -120,6 +120,19 @@ def test_official_pass_dedups_against_installed():
     """
     assert not bool(g.query(q))
 
+def test_build_graph_reports_skipped(tmp_path):
+    bad = tmp_path / "Broken-1.0.eb"
+    bad.write_text("this is = not = a valid easyconfig =")
+    good = os.path.join(FIX, "BWA-0.7.18-GCC-13.2.0.eb")
+    skipped = []
+    g = indexer.build_graph([str(bad), good], skipped=skipped)
+    assert any("Broken-1.0.eb" in path for path, _ in skipped)
+    q = """
+    PREFIX mc: <https://modchef.dev/schema#>
+    ASK { ?m mc:name "BWA" . }
+    """
+    assert bool(g.query(q))            # the valid one is still indexed
+
 def test_build_graph_marks_installed_true():
     files = [os.path.join(FIX, f) for f in os.listdir(FIX)]
     g = indexer.build_graph(files)
