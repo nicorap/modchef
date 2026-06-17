@@ -1,4 +1,55 @@
 from modchef import solver
+from modchef.graph import ModuleRef
+
+
+class _StubGraph:
+    """Minimal graph exposing only compatible_toolchains for _unify tests."""
+    def __init__(self, hierarchy):
+        self._h = hierarchy
+
+    def compatible_toolchains(self, tc_id):
+        return self._h[tc_id]
+
+
+def _ref(name, tc, installed, version="1.0"):
+    return ModuleRef(f"u-{name}-{tc}", f"{name}/{version}-{tc}",
+                     name, version, tc, installed)
+
+
+def test_unify_picks_newer_on_install_tie():
+    g = _StubGraph({"A-1": {"A-1"}, "A-2": {"A-2"}})
+    p, q = solver.Ingredient("tool", "p"), solver.Ingredient("tool", "q")
+    full_cand = {
+        p: [_ref("P", "A-1", True), _ref("P", "A-2", False)],
+        q: [_ref("Q", "A-2", True), _ref("Q", "A-1", False)],
+    }
+    u = solver._unify(g, full_cand)
+    assert u is not None
+    assert u.toolchain_id == "A-2"            # tie on installs (1 each) -> newer
+    assert len(u.installs) == 1
+
+def test_unify_prefers_fewer_installs_over_newer():
+    g = _StubGraph({"A-1": {"A-1"}, "A-2": {"A-2"}})
+    r = solver.Ingredient("tool", "r")
+    s = solver.Ingredient("tool", "s")
+    t = solver.Ingredient("tool", "t")
+    full_cand = {
+        r: [_ref("R", "A-1", True), _ref("R", "A-2", False)],
+        s: [_ref("S", "A-1", True), _ref("S", "A-2", False)],
+        t: [_ref("T", "A-2", True), _ref("T", "A-1", False)],
+    }
+    u = solver._unify(g, full_cand)
+    assert u.toolchain_id == "A-1"            # 1 install vs 2 -> fewer wins
+    assert [m.full_name for _, m in u.installs] == ["T/1.0-A-1"]
+
+def test_unify_returns_none_when_no_generation_covers_all():
+    g = _StubGraph({"A-1": {"A-1"}, "A-2": {"A-2"}})
+    a, b = solver.Ingredient("tool", "a"), solver.Ingredient("tool", "b")
+    full_cand = {
+        a: [_ref("A", "A-1", True)],          # only old, nothing on A-2
+        b: [_ref("B", "A-2", True)],          # only new, nothing on A-1
+    }
+    assert solver._unify(g, full_cand) is None
 
 def test_natural_key_orders_versions():
     versions = ["1.9", "1.10", "1.2"]
