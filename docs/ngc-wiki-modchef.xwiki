@@ -1,10 +1,10 @@
-= Building software environments with modchef =
+== Building software environments with modchef ==
 
 ##modchef## is a helper on the NGC HPC that turns a list of tools and Python/R packages into a ready-to-run set of ##module load## commands. Instead of searching for each tool with ##module spider##, checking which versions are compatible, and loading them one by one, you describe what you want and modchef writes the recipe — choosing versions that share a compatible toolchain wherever possible.
 
 modchef only ever //suggests// ##module load## commands. It never installs anything and never changes your environment on its own.
 
-== When to use modchef ==
+=== When to use modchef ===
 
 Use modchef when:
 
@@ -14,7 +14,7 @@ Use modchef when:
 
 To simply browse what exists, ##module avail## and ##module spider## (above) remain the right tools.
 
-== Loading modchef ==
+=== Loading modchef ===
 
 {{code language="bash"}}
 module load modchef
@@ -22,7 +22,7 @@ module load modchef
 
 This makes the ##modchef## command available. modchef itself is lightweight — it does not pull in EasyBuild or any compilers.
 
-== Building an environment: modchef cook ==
+=== Building an environment: modchef cook ===
 
 Give ##modchef cook## the tools and packages you want:
 
@@ -30,9 +30,9 @@ Give ##modchef cook## the tools and packages you want:
 modchef cook --tools samtools bcftools --python pandas numpy --r ggplot2
 {{/code}}
 
-* ##--tools## — command-line tools and applications (e.g. ##samtools##, ##bwa##).
-* ##--python## — Python packages you want to ##import## (e.g. ##pandas##, ##torch##).
-* ##--r## — R packages (e.g. ##ggplot2##, ##affy##).
+* {{code}}--tools{{/code}} — command-line tools and applications (e.g. ##samtools##, ##bwa##).
+* {{code}}--python{{/code}} — Python packages you want to ##import## (e.g. ##pandas##, ##torch##).
+* {{code}}--r{{/code}} — R packages (e.g. ##ggplot2##, ##affy##).
 
 modchef prints a recipe you can paste into an interactive session or a batch job script:
 
@@ -52,7 +52,7 @@ To save the recipe straight to a script instead:
 modchef cook --tools samtools --python pandas --output env.sh
 {{/code}}
 
-== Reading modchef's output ==
+=== Reading modchef's output ===
 
 Most lines are ordinary ##module load## commands. modchef may also print comment lines that need your attention.
 
@@ -88,7 +88,7 @@ module load PyTorch/2.9.1-foss-2024a
 
 The first three are quick for support to act on — the easyconfig already exists, only an install is needed. The last means a new easyconfig has to be written.
 
-== Finding what provides something: modchef search ==
+=== Finding what provides something: modchef search ===
 
 {{code language="bash"}}
 modchef search bwa
@@ -103,10 +103,10 @@ SAMtools/1.18-GCC-12.3.0   [installed]
 STAR/2.7.11a-GCC-13.3.0    [available — not installed]
 {{/code}}
 
-== A note on package vs. module names ==
+=== A note on package vs. module names ===
 
-You can usually ask for a package by the name you ##import##. modchef knows, for example, that the ##torch## package is provided by the ##PyTorch## module, and that ##ggplot2## lives inside ##R-bundle-CRAN##. If ##--python torch## finds nothing, try the module name (##--python pytorch##) or ##modchef search torch##.
+You can usually ask for a package by the name you ##import##. modchef knows, for example, that the ##torch## package is provided by the ##PyTorch## module, and that ##ggplot2## lives inside ##R-bundle-CRAN##. If {{code}}--python torch{{/code}} finds nothing, try the module name ({{code}}--python pytorch{{/code}}) or ##modchef search torch##.
 
-== Requesting installation of new software ==
+=== Requesting installation of new software ===
 
 As noted above, users cannot install software or Python/R packages themselves. When modchef prints a ##REQUEST INSTALL## or ##TO UNIFY## line, it has already worked out the exact module to install — copy that line into your request to support@ngc.dk. For a ##NOT IN EASYBUILD## result, ask support to create an easyconfig for the tool.
