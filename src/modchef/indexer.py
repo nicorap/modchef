@@ -88,6 +88,14 @@ def parse_easyconfig(path) -> ModuleFacts:
         ext_name = ext if isinstance(ext, str) else ext[0]
         if isinstance(ext_name, str) and ecosystem:
             packages.append((ext_name, ecosystem))
+    # A Python/R module exposes its own importable name, which often differs
+    # from the module name (PyTorch imports as 'torch', via options.modulename).
+    # Record it so `--python torch` resolves to PyTorch, not just `--python
+    # pytorch`. Defaults to the module name when no modulename is declared.
+    if ecosystem:
+        import_name = (ec["options"] or {}).get("modulename") or name
+        if (import_name, ecosystem) not in packages:
+            packages.append((import_name, ecosystem))
 
     return ModuleFacts(
         name=name, version=version, versionsuffix=versionsuffix,
