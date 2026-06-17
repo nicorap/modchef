@@ -24,10 +24,18 @@ class Cluster:
 
 
 @dataclass
+class Unification:
+    toolchain_id: str
+    installs: list = field(default_factory=list)   # [(Ingredient, ModuleRef)]
+    reused: list = field(default_factory=list)     # [(Ingredient, ModuleRef)]
+
+
+@dataclass
 class CookResult:
     clusters: list = field(default_factory=list)
     unresolved: list = field(default_factory=list)
     needs_install: list = field(default_factory=list)
+    unification: Optional["Unification"] = None
 
 
 def _newest(modules):
@@ -116,6 +124,46 @@ def _minimize(graph, chosen_for, cluster):
             if m.full_name in closures[r.full_name]:
                 cluster.reasons[r.full_name].extend(reasons[m.full_name])
                 break
+
+
+def _unify(graph, full_cand):
+    """Find one toolchain generation covering every clustered ingredient.
+
+    `full_cand` maps each clustered ingredient to its installed+available
+    candidates. A generation G works if every ingredient has a candidate whose
+    toolchain is in compatible_toolchains(G). For such a G, ingredients with no
+    installed G-compatible build (but an available one) become installs; the
+    rest are reused. Returns the G needing the fewest installs (newest on ties),
+    or None when no generation covers everyone.
+    """
+    ings = list(full_cand.keys())
+    roots = {m.toolchain_id for ing in ings for m in full_cand[ing]
+             if m.toolchain_id is not None}
+
+    options = []
+    for g_root in roots:
+        anc = graph.compatible_toolchains(g_root)
+        installs, reused = [], []
+        covered = True
+        for ing in ings:
+            compat = [m for m in full_cand[ing] if m.toolchain_id in anc]
+            if not compat:
+                covered = False
+                break
+            inst = [m for m in compat if m.installed]
+            if inst:
+                reused.append((ing, _newest(inst)))
+            else:
+                installs.append((ing, _newest([m for m in compat])))
+        if not covered or not installs:
+            continue   # no installs => not a split; nothing to suggest
+        options.append(Unification(g_root, installs, reused))
+
+    if not options:
+        return None
+    options.sort(key=lambda u: natural_key(u.toolchain_id), reverse=True)  # newest first
+    options.sort(key=lambda u: len(u.installs))                            # then fewest (stable)
+    return options[0]
 
 
 def cook(graph, ingredients, pinned_toolchain=None, full=False):
