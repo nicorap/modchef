@@ -1,0 +1,12 @@
+easyblock = 'PythonBundle'
+name = 'SciPy-bundle'
+version = '2023.07'
+homepage = 'https://python.org/'
+description = 'Bundle of Python scientific packages'
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+exts_list = [
+    ('numpy', '1.25.1'),
+    ('pandas', '2.0.3'),
+    ('scipy', '1.11.1'),
+]
+moduleclass = 'lang'

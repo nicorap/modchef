@@ -1,0 +1,55 @@
+# Runs the modchef test suite. The runtime layers (cook/search/graph) need only
+# rdflib + PyYAML, so they run in a fast "core" job. The indexer/toolchains
+# tests need the EasyBuild framework, so they run in a separate "index" job that
+# installs the optional [index] extra — keeping the split the codebase relies on.
+
+name: tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  core:
+    name: core (runtime, no EasyBuild)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.11", "3.12" ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install modchef + dev deps
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -e ".[dev]" flake8
+    - name: Lint (syntax errors / undefined names)
+      run: flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Run core tests (exclude EasyBuild-dependent)
+      run: pytest --ignore=tests/test_indexer.py --ignore=tests/test_toolchains.py -q
+
+  index:
+    name: index (with EasyBuild)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.11" ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install modchef + EasyBuild (index extra)
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -e ".[index,dev]"
+    - name: Run EasyBuild-dependent tests
+      run: pytest tests/test_indexer.py tests/test_toolchains.py -q

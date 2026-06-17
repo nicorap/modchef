@@ -1,0 +1,8 @@
+easyblock = 'ConfigureMake'
+name = 'SAMtools'
+version = '1.18'
+homepage = 'https://www.htslib.org/'
+description = 'SAM/BAM manipulation tools'
+toolchain = {'name': 'GCC', 'version': '12.3.0'}
+dependencies = [('zlib', '1.2.13')]
+moduleclass = 'bio'

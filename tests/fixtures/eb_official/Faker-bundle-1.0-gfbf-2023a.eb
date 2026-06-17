@@ -1,0 +1,10 @@
+easyblock = 'PythonBundle'
+name = 'Faker-bundle'
+version = '1.0'
+homepage = 'https://python.org/'
+description = 'Official-only Python bundle for tests'
+toolchain = {'name': 'gfbf', 'version': '2023a'}
+exts_list = [
+    ('faker', '19.0.0'),
+]
+moduleclass = 'lang'
