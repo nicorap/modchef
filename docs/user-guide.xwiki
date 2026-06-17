@@ -1,6 +1,6 @@
 == Building software environments with modchef ==
 
-##modchef## is a helper on the NGC HPC that turns a list of tools and Python/R packages into a ready-to-run set of ##module load## commands. Instead of searching for each tool with ##module spider##, checking which versions are compatible, and loading them one by one, you describe what you want and modchef writes the recipe — choosing versions that share a compatible toolchain wherever possible.
+##modchef## turns a list of tools and Python/R packages into a ready-to-run set of ##module load## commands. Instead of searching for each tool with ##module spider##, checking which versions are compatible, and loading them one by one, you describe what you want and modchef writes the recipe — choosing versions that share a compatible toolchain wherever possible.
 
 modchef only ever //suggests// ##module load## commands. It never installs anything and never changes your environment on its own.
 
@@ -12,7 +12,7 @@ Use modchef when:
 * You are not sure which module provides a given package (for example, which bundle ships ##ggplot2##).
 * You want a clean, copy-pasteable block of ##module load## commands for a job script.
 
-To simply browse what exists, ##module avail## and ##module spider## (above) remain the right tools.
+To simply browse what exists, the standard ##module avail## and ##module spider## commands remain the right tools.
 
 === Loading modchef ===
 
@@ -65,7 +65,7 @@ module load awscli/2.17.54-GCCcore-13.3.0
 module load PyTorch/2.9.1-foss-2024a
 {{/code}}
 
-**Request installation.** A tool or package that exists in EasyBuild but is not installed here yet:
+**Request installation.** A tool or package that exists in EasyBuild but is not installed on this cluster yet:
 
 {{code language="bash"}}
 # REQUEST INSTALL: STAR (tool) is available in EasyBuild but not installed on this HPC.
@@ -86,7 +86,7 @@ module load PyTorch/2.9.1-foss-2024a
 #   ask support to create an easyconfig for it.
 {{/code}}
 
-The first three are quick for support to act on — the easyconfig already exists, only an install is needed. The last means a new easyconfig has to be written.
+The first three are quick for an admin to act on — the easyconfig already exists, only an install is needed. The last means a new easyconfig has to be written.
 
 === Finding what provides something: modchef search ===
 
@@ -109,4 +109,4 @@ You can usually ask for a package by the name you ##import##. modchef knows, for
 
 === Requesting installation of new software ===
 
-As noted above, users cannot install software or Python/R packages themselves. When modchef prints a ##REQUEST INSTALL## or ##TO UNIFY## line, it has already worked out the exact module to install — copy that line into your request to support@ngc.dk. For a ##NOT IN EASYBUILD## result, ask support to create an easyconfig for the tool.
+On a managed HPC, users typically cannot install software or Python/R packages themselves. When modchef prints a ##REQUEST INSTALL## or ##TO UNIFY## line, it has already worked out the exact module to install — pass that line to whoever manages software on your cluster. For a ##NOT IN EASYBUILD## result, that team will need to create an easyconfig for the tool.

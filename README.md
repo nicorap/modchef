@@ -2,6 +2,16 @@
 
 Cook EasyBuild environments from software ingredients.
 
+modchef indexes a cluster's EasyBuild modules into an RDF graph and turns a list
+of requested tools and Python/R packages into a minimal, ready-to-run set of
+`module load` commands — picking versions that share a compatible toolchain. It
+distinguishes modules that are **installed** (loadable now) from those only
+**available** in the official EasyBuild collection, and when something isn't
+installed it tells you the exact easyconfig to request. When requested tools
+can't share a toolchain, it can suggest the install that would unify them.
+
+See **[docs/user-guide.md](docs/user-guide.md)** for the end-user guide.
+
 ## Usage
 
     modchef cook --tools samtools bcftools multiqc --python pandas numpy
@@ -9,6 +19,13 @@ Cook EasyBuild environments from software ingredients.
     modchef search bwa
     modchef explain SAMtools/1.22-GCC-14.3.0
     modchef menu
+
+`cook` emits a `module purge` followed by the `module load` lines for the
+fewest compatible toolchain clusters. It also surfaces, as comments and on
+stderr: `REQUEST INSTALL` (available in EasyBuild, not installed),
+`TO UNIFY` (install X so split tools share one toolchain), and
+`NOT IN EASYBUILD` (no easyconfig anywhere). `search` tags each hit
+`[installed]` or `[available — not installed]`.
 
 ## Daily index (cron, runs as the EasyBuild admin user)
 
