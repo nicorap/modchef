@@ -1,0 +1,8 @@
+easyblock = 'PythonPackage'
+name = 'PyTorch'
+version = '2.1.2'
+homepage = 'https://pytorch.org/'
+description = 'Tensors and dynamic neural networks in Python'
+toolchain = {'name': 'foss', 'version': '2023a'}
+options = {'modulename': 'torch'}
+moduleclass = 'ai'

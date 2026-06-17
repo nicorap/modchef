@@ -15,6 +15,22 @@ def test_parse_bundle_extracts_facts():
     assert ("pandas", "python") in facts.packages
     assert ("numpy", "python") in facts.packages
 
+def test_parse_records_module_import_name_as_package():
+    # PyTorch's module is 'PyTorch' but it imports as 'torch' (options.modulename)
+    facts = indexer.parse_easyconfig(
+        os.path.join(FIX, "PyTorch-2.1.2-foss-2023a.eb"))
+    assert ("torch", "python") in facts.packages
+
+def test_import_name_indexed_as_package():
+    files = [os.path.join(FIX, f) for f in os.listdir(FIX)]
+    g = indexer.build_graph(files)
+    q = """
+    PREFIX mc: <https://modchef.dev/schema#>
+    ASK { ?m mc:name "PyTorch" ; mc:providesPackage ?p .
+          ?p mc:name "torch" ; mc:ecosystem "python" . }
+    """
+    assert bool(g.query(q))
+
 def test_parse_tool_extracts_dependency():
     facts = indexer.parse_easyconfig(
         os.path.join(FIX, "SAMtools-1.18-GCC-12.3.0.eb"))
