@@ -45,6 +45,9 @@ def render(result, explain=False, as_script=False, name=None):
         lines.append(f"#   ask support to install: {names}")
 
     for ing in result.unresolved:
-        lines.append(f"# WARNING: {ing.name} ({ing.kind}) not found in the catalog")
+        lines.append(
+            f"# NOT IN EASYBUILD: {ing.name} ({ing.kind}) — no installed or "
+            f"official easyconfig found.")
+        lines.append("#   ask support to create an easyconfig for it.")
 
     return "\n".join(lines) + "\n"
