@@ -33,13 +33,23 @@ def test_available_only_goes_to_needs_install(sample_graph):
     assert solver.Ingredient("tool", "star") not in res.unresolved
 
 def test_available_package_goes_to_needs_install(sample_graph):
-    # a Python package provided only by a not-installed bundle is a request,
-    # not unresolved.
-    res = solver.cook(sample_graph, [solver.Ingredient("python", "biopython")])
+    # a Python package provided only by a not-installed bundle (and by no
+    # standalone module) is a request, not unresolved.
+    res = solver.cook(sample_graph, [solver.Ingredient("python", "labpipe")])
     assert res.clusters == []
     names = [ing.name for ing, mods in res.needs_install]
-    assert "biopython" in names
-    assert solver.Ingredient("python", "biopython") not in res.unresolved
+    assert "labpipe" in names
+    assert solver.Ingredient("python", "labpipe") not in res.unresolved
+
+def test_package_resolves_to_standalone_module(sample_graph):
+    # biopython is installed as its own module (provides software 'biopython');
+    # a --python biopython request must load it, not suggest the Biotools bundle
+    # that merely lists biopython in its exts_list.
+    res = solver.cook(sample_graph, [solver.Ingredient("python", "biopython")])
+    assert res.needs_install == []
+    loaded = [m.full_name for c in res.clusters for m in c.modules]
+    assert "Biopython/1.85-gfbf-2023a" in loaded
+    assert "Biotools/1.0-gfbf-2023a" not in loaded
 
 def test_installed_shadows_available(sample_graph):
     res = solver.cook(sample_graph, [solver.Ingredient("tool", "gatk")])
