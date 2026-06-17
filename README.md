@@ -17,16 +17,22 @@ EasyBuild module first (the runtime `modchef` module deliberately does *not*
 depend on EasyBuild, so `cook`/`search` users stay lean):
 
     module load EasyBuild/5.2.0
-    modchef-index --repo /opt/easybuild/ebfiles_repo \
-                  --official-repo /opt/easybuild/easyconfigs \
+    modchef-index --installed-root /opt/easybuild/software \
+                  --robot-repo     /opt/easybuild/easyconfigs \
+                  --official-repo  /opt/easybuild/easyconfigs \
                   --output /opt/easybuild/modchef/modchef.ttl
 
-`--repo` is the set installed on the HPC (cookable). `--official-repo` is the
+`--installed-root` is the EasyBuild software install tree: modchef indexes the
+easyconfig EasyBuild stamped for each *actually installed* module
+(`<name>/<version>/easybuild/*.eb`), so the catalog matches what `module avail`
+shows, including every bundle's extensions. `--robot-repo` is an easyconfigs
+collection used only to resolve installed dependencies. `--official-repo` is the
 official EasyBuild collection, indexed as "available, not installed" with the
 same full facts (deps + packages): `cook` builds from installed modules first
 and, when a tool or package is only available, tells you the easyconfig to ask
-support to install. Full-parsing the official collection makes the daily index
-noticeably heavier.
+support to install. Any easyconfig that fails to parse is reported on stderr
+rather than silently dropped. Full-parsing the official collection makes the
+daily index noticeably heavier.
 
 The runtime CLI reads the graph from `$MODCHEF_TTL` (set by the module file).
 

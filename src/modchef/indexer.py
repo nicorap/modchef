@@ -92,8 +92,15 @@ def parse_easyconfig(path) -> ModuleFacts:
     # from the module name (PyTorch imports as 'torch', via options.modulename).
     # Record it so `--python torch` resolves to PyTorch, not just `--python
     # pytorch`. Defaults to the module name when no modulename is declared.
+    # `options` is only a valid easyconfig parameter for PythonPackage/RPackage
+    # easyblocks; a plain Bundle (e.g. R-bundle-CRAN) has none, and accessing it
+    # raises — so guard it, or the whole module would be dropped.
     if ecosystem:
-        import_name = (ec["options"] or {}).get("modulename") or name
+        try:
+            opts = ec["options"]
+        except Exception:
+            opts = None
+        import_name = (opts or {}).get("modulename") or name
         if (import_name, ecosystem) not in packages:
             packages.append((import_name, ecosystem))
 
@@ -219,33 +226,51 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="modchef-index",
         description="Parse EasyBuild easyconfigs into a modchef RDF graph.")
-    parser.add_argument("--repo", default="/opt/easybuild/ebfiles_repo",
-                        help="Root directory containing *.eb files.")
-    parser.add_argument("--output", required=True, help="Output .ttl path.")
-    parser.add_argument("--glob", default="**/*.eb",
-                        help="Glob (relative to --repo) for easyconfigs.")
+    parser.add_argument("--installed-root", default="/opt/easybuild/software",
+                        help="Root of the EasyBuild software install tree "
+                             "(installed tier).")
+    parser.add_argument("--installed-glob", default="*/*/easybuild/*.eb",
+                        help="Glob (relative to --installed-root) for the "
+                             "stamped easyconfigs; excludes reprod/ copies.")
+    parser.add_argument("--robot-repo", default=None,
+                        help="Easyconfigs dir used as the robot path to resolve "
+                             "installed deps (default: --official-repo, else "
+                             "--installed-root).")
     parser.add_argument("--official-repo", default=None,
                         help="Root of the official EasyBuild easyconfig "
-                             "collection (parsed lightweight as 'available').")
+                             "collection (the available, not-installed tier).")
+    parser.add_argument("--output", required=True, help="Output .ttl path.")
     args = parser.parse_args(argv)
 
-    paths = glob.glob(os.path.join(args.repo, args.glob), recursive=True)
+    paths = glob.glob(os.path.join(args.installed_root, args.installed_glob),
+                      recursive=True)
     if not paths:
-        print(f"modchef-index: no easyconfigs under {args.repo}", file=sys.stderr)
+        print(f"modchef-index: no easyconfigs under {args.installed_root}",
+              file=sys.stderr)
         return 1
+
     official = None
     official_root = None
     if args.official_repo:
         official = glob.glob(
-            os.path.join(args.official_repo, args.glob), recursive=True)
+            os.path.join(args.official_repo, "**/*.eb"), recursive=True)
         official_root = os.path.abspath(args.official_repo)
+
+    robot_repo = args.robot_repo or args.official_repo or args.installed_root
+    skipped = []
     g = build_graph(paths, with_toolchain_hierarchy=True,
-                    robot_paths=os.path.abspath(args.repo),
-                    official_paths=official,
-                    official_robot_paths=official_root)
+                    robot_paths=os.path.abspath(robot_repo),
+                    official_paths=official, official_robot_paths=official_root,
+                    skipped=skipped)
     g.serialize(args.output, format="turtle")
-    print(f"modchef-index: wrote {len(g)} triples from {len(paths)} files "
-          f"to {args.output}")
+    considered = len(paths) + (len(official) if official else 0)
+    print(f"modchef-index: wrote {len(g)} triples from {len(paths)} installed "
+          f"files to {args.output}")
+    if skipped:
+        print(f"modchef-index: skipped {len(skipped)} of {considered} "
+              f"easyconfigs", file=sys.stderr)
+        for path, err in skipped:
+            print(f"modchef-index:   {path}: {err}", file=sys.stderr)
     return 0
 
 
