@@ -167,14 +167,15 @@
 <https://modchef.dev/r/sw-gatk> a mc:Software ;
     mc:name "gatk" .
 
-# Available-only Python bundle: a package request resolves to a not-installed
-# bundle (now possible because the available tier carries exts).
+# A not-installed bundle whose exts_list happens to ship 'biopython' (like
+# OpenFold). It also ships 'labpipe', which is provided by nothing else.
 <https://modchef.dev/r/m-biotools-1-0-gfbf-2023a> a mc:Module ;
     mc:builtWith <https://modchef.dev/r/tc-gfbf-2023a> ;
     mc:fullName "Biotools/1.0-gfbf-2023a" ;
     mc:installed false ;
     mc:name "Biotools" ;
-    mc:providesPackage <https://modchef.dev/r/pkg-python-biopython> ;
+    mc:providesPackage <https://modchef.dev/r/pkg-python-biopython>,
+        <https://modchef.dev/r/pkg-python-labpipe> ;
     mc:providesSoftware <https://modchef.dev/r/sw-biotools> ;
     mc:version "1.0" .
 
@@ -182,6 +183,24 @@
     mc:ecosystem "python" ;
     mc:name "biopython" .
 
+<https://modchef.dev/r/pkg-python-labpipe> a mc:Package ;
+    mc:ecosystem "python" ;
+    mc:name "labpipe" .
+
 <https://modchef.dev/r/sw-biotools> a mc:Software ;
     mc:name "biotools" .
+
+# biopython installed as its OWN module (provides software 'biopython'), like
+# the real Biopython/*. A --python biopython request must resolve to this, not
+# to the Biotools bundle that merely lists biopython in its exts_list.
+<https://modchef.dev/r/m-biopython-1-85-gfbf-2023a> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gfbf-2023a> ;
+    mc:fullName "Biopython/1.85-gfbf-2023a" ;
+    mc:installed true ;
+    mc:name "Biopython" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-biopython> ;
+    mc:version "1.85" .
+
+<https://modchef.dev/r/sw-biopython> a mc:Software ;
+    mc:name "biopython" .
 

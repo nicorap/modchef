@@ -58,17 +58,35 @@ class ModChefGraph:
         )
 
     def modules_providing(self, ingredient, kind):
-        """Modules providing a tool (kind='tool') or package ('python'/'r')."""
+        """Modules providing a tool (kind='tool') or package ('python'/'r').
+
+        A package can be provided two ways: as a member of a bundle's exts_list
+        (mc:providesPackage), or as its own module whose software name matches
+        (e.g. the Biopython module provides the 'biopython' package). Both
+        count, so a `--python biopython` request resolves to the standalone
+        Biopython module rather than to some unrelated bundle that merely lists
+        biopython in its exts_list.
+        """
         ingredient = ingredient.lower()
+        seen = set()
         results = []
+
+        def add(m):
+            if m not in seen:
+                seen.add(m)
+                results.append(self._module_ref(m))
+
         if kind == "tool":
-            sw = schema.software_uri(ingredient)
-            for m in self.g.subjects(schema.MC.providesSoftware, sw):
-                results.append(self._module_ref(m))
+            for m in self.g.subjects(schema.MC.providesSoftware,
+                                     schema.software_uri(ingredient)):
+                add(m)
         else:
-            p = schema.package_uri(ingredient, kind)
-            for m in self.g.subjects(schema.MC.providesPackage, p):
-                results.append(self._module_ref(m))
+            for m in self.g.subjects(schema.MC.providesPackage,
+                                     schema.package_uri(ingredient, kind)):
+                add(m)
+            for m in self.g.subjects(schema.MC.providesSoftware,
+                                     schema.software_uri(ingredient)):
+                add(m)
         return results
 
     def dependencies_of(self, module_uri):

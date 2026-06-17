@@ -17,6 +17,13 @@ def test_modules_providing_python_package(sample_graph):
     mods = sample_graph.modules_providing("pandas", kind="python")
     assert any(m.name == "SciPy-bundle" for m in mods)
 
+def test_package_request_matches_standalone_software_module(sample_graph):
+    # a package can be installed as its own module (Biopython -> 'biopython'),
+    # not only as a bundle exts_list member -> a package lookup must find it.
+    mods = sample_graph.modules_providing("biopython", kind="python")
+    names = {m.name for m in mods}
+    assert "Biopython" in names
+
 def test_dependencies_of(sample_graph):
     mods = sample_graph.modules_providing("samtools", kind="tool")
     sam = next(m for m in mods if m.name == "SAMtools")
