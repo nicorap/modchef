@@ -68,6 +68,11 @@ def _cmd_cook(args):
         names = ", ".join(sorted(m.full_name for m in mods))
         print(f"modchef: {ing.name} ({ing.kind}) is available in EasyBuild but "
               f"not installed; ask support to install: {names}", file=sys.stderr)
+    if result.unification:
+        u = result.unification
+        names = ", ".join(sorted(m.full_name for _, m in u.installs))
+        print(f"modchef: to unify under {u.toolchain_id}, ask support to "
+              f"install: {names}", file=sys.stderr)
     return 1 if (result.unresolved or result.needs_install) else 0
 
 

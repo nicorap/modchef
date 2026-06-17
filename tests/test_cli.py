@@ -127,6 +127,13 @@ def test_cook_prepends_module_purge(capsys):
     out = capsys.readouterr().out
     assert out.splitlines()[0] == "module purge"
 
+def test_cook_unification_suggestion_and_exit_zero(capsys):
+    rc = cli.main(["cook", "--tools", "toolx", "tooly", "--graph", FIX_TTL])
+    captured = capsys.readouterr()
+    assert rc == 0                               # recipe loads; suggestion is informational
+    assert "to unify" in captured.err.lower()
+    assert "ToolX/2.0-GCC-13.2.0" in captured.err
+
 def test_cook_minimal_by_default(capsys):
     cli.main(["cook", "--tools", "samtools", "--graph", FIX_TTL])
     out = capsys.readouterr().out
