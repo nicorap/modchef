@@ -1,6 +1,6 @@
 from modchef import output
 from modchef.graph import ModuleRef
-from modchef.solver import Cluster, CookResult, Ingredient
+from modchef.solver import Cluster, CookResult, Ingredient, Unification
 
 def _result():
     mods = [ModuleRef("u1", "zlib/1.2.13-GCCcore-12.3.0", "zlib", "1.2.13",
@@ -48,6 +48,23 @@ def test_needs_install_warning():
     assert "STAR/2.7.11a-GCC-12.3.0" in text
     assert "ask support" in text.lower()
     assert "not installed" in text.lower()
+
+def test_unification_block_rendered():
+    mods = [ModuleRef("u", "ToolY/1.0-GCC-13.2.0", "ToolY", "1.0", "GCC-13.2.0")]
+    c1 = Cluster(toolchain_id="GCC-13.2.0", modules=mods)
+    c2 = Cluster(toolchain_id="GCC-12.3.0", modules=[
+        ModuleRef("v", "ToolX/1.0-GCC-12.3.0", "ToolX", "1.0", "GCC-12.3.0")])
+    install = ModuleRef("w", "ToolX/2.0-GCC-13.2.0", "ToolX", "2.0",
+                        "GCC-13.2.0", installed=False)
+    u = Unification(toolchain_id="GCC-13.2.0",
+                    installs=[(Ingredient("tool", "toolx"), install)],
+                    reused=[(Ingredient("tool", "tooly"), mods[0])])
+    res = CookResult(clusters=[c1, c2], unification=u)
+    text = output.render(res)
+    assert "TO UNIFY" in text
+    assert "GCC-13.2.0" in text
+    assert "ToolX/2.0-GCC-13.2.0" in text
+    assert "toolx" in text and "tooly" in text
 
 def test_script_wrapping_for_output_file():
     text = output.render(_result(), as_script=True, name="germline-qc")
