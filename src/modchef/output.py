@@ -7,6 +7,11 @@ def render(result, explain=False, as_script=False, name=None):
         lines.append("#!/bin/bash")
         if name:
             lines.append(f"# modchef recipe: {name}")
+
+    # Start from a clean environment so a copy-pasted (or sourced) recipe can't
+    # collide with whatever the user already had loaded. Skip it when there is
+    # nothing to load, so we don't wipe their environment for no reason.
+    if any(cluster.modules for cluster in result.clusters):
         lines.append("module purge")
 
     multi = len(result.clusters) > 1
