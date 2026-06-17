@@ -122,6 +122,11 @@ def test_search_annotates_available(capsys):
     out = capsys.readouterr().out
     assert "available — not installed" in out
 
+def test_cook_prepends_module_purge(capsys):
+    cli.main(["cook", "--tools", "samtools", "--graph", FIX_TTL])
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == "module purge"
+
 def test_cook_minimal_by_default(capsys):
     cli.main(["cook", "--tools", "samtools", "--graph", FIX_TTL])
     out = capsys.readouterr().out

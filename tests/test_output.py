@@ -18,6 +18,17 @@ def test_module_load_lines():
     # dependency loads before dependent
     assert text.index("zlib") < text.index("SAMtools")
 
+def test_purge_prepended_to_plain_output():
+    # copy-pasting the recipe should start from a clean environment
+    text = output.render(_result())
+    assert text.splitlines()[0] == "module purge"
+
+def test_no_purge_when_nothing_to_load():
+    # nothing to load -> don't wipe the user's environment for no reason
+    res = CookResult(clusters=[], unresolved=[Ingredient("tool", "nope")])
+    text = output.render(res)
+    assert "module purge" not in text
+
 def test_explain_annotates_reasons():
     text = output.render(_result(), explain=True)
     assert "requested tool: samtools" in text
