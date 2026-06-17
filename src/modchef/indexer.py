@@ -181,7 +181,7 @@ def _add_toolchain_hierarchy(g):
 
 
 def build_graph(paths, with_toolchain_hierarchy=False, robot_paths=None,
-                official_paths=None, official_robot_paths=None):
+                official_paths=None, official_robot_paths=None, skipped=None):
     if robot_paths:
         configure_easybuild(robot_paths)
     g = Graph()
@@ -189,8 +189,10 @@ def build_graph(paths, with_toolchain_hierarchy=False, robot_paths=None,
     for path in paths:
         try:
             _add_facts(g, parse_easyconfig(path))
-        except Exception:
-            continue   # resilient: skip unparseable configs (logged in main)
+        except Exception as exc:
+            if skipped is not None:
+                skipped.append((path, str(exc)))
+            continue   # resilient: skip unparseable configs (recorded in `skipped`)
     if official_paths:
         # Full-parse the official collection (deps + exts) as the available
         # tier. Point the robot path at the official repo so its deps resolve
@@ -201,7 +203,9 @@ def build_graph(paths, with_toolchain_hierarchy=False, robot_paths=None,
         for path in official_paths:
             try:
                 facts = parse_easyconfig(path)
-            except Exception:
+            except Exception as exc:
+                if skipped is not None:
+                    skipped.append((path, str(exc)))
                 continue   # resilient: skip unparseable configs
             if facts.full_name in installed_names:
                 continue   # already installed; do not downgrade to available
