@@ -26,6 +26,17 @@ def render(result, explain=False, as_script=False, name=None):
                 line += f"    # {reasons}"
             lines.append(line)
 
+    u = result.unification
+    if u is not None:
+        names = sorted({ing.name for ing, _ in (u.installs + u.reused)})
+        lines.append(
+            f"# TO UNIFY these {len(result.clusters)} clusters under "
+            f"{u.toolchain_id}, ask support to install:")
+        for ing, mod in u.installs:
+            lines.append(f"#   {mod.full_name}    ({ing.kind}: {ing.name})")
+        lines.append(
+            f"# then all of [{', '.join(names)}] load under {u.toolchain_id}.")
+
     for ing, mods in result.needs_install:
         names = ", ".join(sorted(m.full_name for m in mods))
         lines.append(
