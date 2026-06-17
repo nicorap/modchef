@@ -37,7 +37,8 @@ def test_unresolved_warning():
     res = CookResult(clusters=[], unresolved=[Ingredient("tool", "nope")])
     text = output.render(res)
     assert "nope" in text
-    assert "not found" in text.lower()
+    assert "not in easybuild" in text.lower()
+    assert "ask support to create" in text.lower()
 
 def test_needs_install_warning():
     avail = ModuleRef("u", "STAR/2.7.11a-GCC-12.3.0", "STAR", "2.7.11a",
