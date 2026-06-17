@@ -1,0 +1,7 @@
+easyblock = 'ConfigureMake'
+name = 'zlib'
+version = '1.2.13'
+homepage = 'https://zlib.net'
+description = 'zlib compression library'
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+moduleclass = 'lib'

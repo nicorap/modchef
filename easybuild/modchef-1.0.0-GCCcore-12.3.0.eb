@@ -1,0 +1,37 @@
+easyblock = 'PythonPackage'
+
+name = 'modchef'
+version = '1.0.0'
+
+homepage = 'https://modchef.dev'
+description = "Cook EasyBuild environments from software ingredients."
+
+toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
+
+sources = ['modchef-%(version)s.tar.gz']
+
+dependencies = [
+    ('Python', '3.11.3'),
+    ('PyYAML', '6.0'),
+    ('RDFlib', '7.0.0'),
+]
+
+use_pip = True
+download_dep_fail = True
+sanity_pip_check = True
+
+sanity_check_paths = {
+    'files': ['bin/modchef'],
+    'dirs': ['lib/python%(pyshortver)s/site-packages/modchef'],
+}
+
+sanity_check_commands = [
+    'python -c "import modchef"',
+    "modchef --help",
+]
+
+# The daily .ttl is written by the modchef-index cron to a shared path and read
+# at runtime via $MODCHEF_TTL (set below).
+modextravars = {'MODCHEF_TTL': '/opt/easybuild/modchef/modchef.ttl'}
+
+moduleclass = 'tools'

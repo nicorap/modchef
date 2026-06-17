@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modchef"
+version = "1.0.0"
+description = "Cook EasyBuild environments from software ingredients."
+requires-python = ">=3.9"
+dependencies = ["rdflib>=6.0", "PyYAML>=5.4"]
+
+[project.optional-dependencies]
+index = ["easybuild-framework", "easybuild-easyblocks"]
+dev = ["pytest"]
+
+[project.scripts]
+modchef = "modchef.cli:main"
+modchef-index = "modchef.indexer:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
