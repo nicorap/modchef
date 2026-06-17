@@ -204,3 +204,37 @@
 <https://modchef.dev/r/sw-biopython> a mc:Software ;
     mc:name "biopython" .
 
+# Toolchain-unification case: ToolX is installed only on the older GCC-12.3.0
+# and available (not installed) on GCC-13.2.0; ToolY is installed only on
+# GCC-13.2.0. Requesting both splits installed-only, and unifies under
+# GCC-13.2.0 by installing the available ToolX.
+<https://modchef.dev/r/m-toolx-1-0-gcc-12-3-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-12-3-0> ;
+    mc:fullName "ToolX/1.0-GCC-12.3.0" ;
+    mc:installed true ;
+    mc:name "ToolX" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-toolx> ;
+    mc:version "1.0" .
+
+<https://modchef.dev/r/m-toolx-2-0-gcc-13-2-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-13-2-0> ;
+    mc:fullName "ToolX/2.0-GCC-13.2.0" ;
+    mc:installed false ;
+    mc:name "ToolX" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-toolx> ;
+    mc:version "2.0" .
+
+<https://modchef.dev/r/m-tooly-1-0-gcc-13-2-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-13-2-0> ;
+    mc:fullName "ToolY/1.0-GCC-13.2.0" ;
+    mc:installed true ;
+    mc:name "ToolY" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-tooly> ;
+    mc:version "1.0" .
+
+<https://modchef.dev/r/sw-toolx> a mc:Software ;
+    mc:name "toolx" .
+
+<https://modchef.dev/r/sw-tooly> a mc:Software ;
+    mc:name "tooly" .
+

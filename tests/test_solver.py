@@ -114,6 +114,22 @@ def test_missing_everywhere_still_unresolved(sample_graph):
     assert solver.Ingredient("tool", "nope") in res.unresolved
     assert res.needs_install == []
 
+def test_cook_sets_unification_on_split(sample_graph):
+    res = solver.cook(sample_graph, [solver.Ingredient("tool", "toolx"),
+                                     solver.Ingredient("tool", "tooly")])
+    assert len(res.clusters) == 2            # installed-only splits across lines
+    u = res.unification
+    assert u is not None
+    assert u.toolchain_id == "GCC-13.2.0"
+    assert [m.full_name for _, m in u.installs] == ["ToolX/2.0-GCC-13.2.0"]
+    assert [m.full_name for _, m in u.reused] == ["ToolY/1.0-GCC-13.2.0"]
+
+def test_cook_no_unification_for_single_cluster(sample_graph):
+    res = solver.cook(sample_graph, [solver.Ingredient("tool", "samtools"),
+                                     solver.Ingredient("tool", "bcftools")])
+    assert len(res.clusters) == 1
+    assert res.unification is None
+
 def test_unresolved_ingredient_reported(sample_graph):
     result = solver.cook(sample_graph,
                          [solver.Ingredient("tool", "does-not-exist")])
