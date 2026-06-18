@@ -29,6 +29,22 @@ def _resolve_graph_path(arg):
     return arg or os.environ.get("MODCHEF_TTL") or DEFAULT_TTL
 
 
+def _resolve_module(graph, name):
+    """Resolve a full module name, or a software name to its newest module.
+
+    Lets `inspect`/`explain` take either `SAMtools/1.18-GCC-12.3.0` or just
+    `samtools` (newest version wins, newest toolchain breaking ties).
+    """
+    m = graph.modules_by_full_name(name)
+    if m is not None:
+        return m
+    mods = graph.modules_providing(name.lower(), kind="tool")
+    if mods:
+        return max(mods, key=lambda x: (solver.natural_key(x.version),
+                                        solver.natural_key(x.toolchain_id or "")))
+    return None
+
+
 def _load_graph(path):
     path = _resolve_graph_path(path)
     if not os.path.exists(path):
@@ -120,7 +136,7 @@ def _cmd_inspect(args):
     g = _load_graph(args.graph)
     if g is None:
         return 1
-    m = g.modules_by_full_name(args.module)
+    m = _resolve_module(g, args.module)
     if m is None:
         print(f"modchef: module not found: {args.module}", file=sys.stderr)
         _suggest(args.module, g.all_module_names())
@@ -157,7 +173,7 @@ def _cmd_explain(args):
     g = _load_graph(args.graph)
     if g is None:
         return 1
-    m = g.modules_by_full_name(args.module)
+    m = _resolve_module(g, args.module)
     if m is None:
         print(f"modchef: module not found: {args.module}", file=sys.stderr)
         _suggest(args.module, g.all_module_names())

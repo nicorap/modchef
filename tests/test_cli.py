@@ -67,6 +67,17 @@ def test_cook_resolvable_exits_zero():
     assert rc == 0
 
 
+def test_inspect_accepts_software_name(capsys):
+    # a bare software name resolves to the newest module providing it
+    cli.main(["inspect", "gatk", "--graph", FIX_TTL])
+    out = capsys.readouterr().out
+    assert "GATK/4.6.0.0-GCC-12.3.0" in out      # newest (4.6 > 4.5)
+
+def test_explain_accepts_software_name(capsys):
+    cli.main(["explain", "gatk", "--graph", FIX_TTL])
+    out = capsys.readouterr().out
+    assert "GATK/4.6.0.0-GCC-12.3.0" in out
+
 def test_explain_module_describes_provision(capsys):
     cli.main(["explain", "SciPy-bundle/2023.07-gfbf-2023a", "--graph", FIX_TTL])
     out = capsys.readouterr().out
