@@ -31,6 +31,13 @@ def test_import_name_indexed_as_package():
     """
     assert bool(g.query(q))
 
+def test_parse_general_r_bundle_extensions():
+    # R bundles other than CRAN/Bioconductor (easyblock 'Bundle',
+    # exts_defaultclass 'RPackage') must still classify their exts as R.
+    facts = indexer.parse_easyconfig(
+        os.path.join(FIX, "R-bundle-ggsurvfit-1.1.0-foss-2024a.eb"))
+    assert ("ggsurvfit", "r") in facts.packages
+
 def test_parse_tool_extracts_dependency():
     facts = indexer.parse_easyconfig(
         os.path.join(FIX, "SAMtools-1.18-GCC-12.3.0.eb"))

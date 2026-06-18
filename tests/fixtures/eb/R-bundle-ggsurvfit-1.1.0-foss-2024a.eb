@@ -1,0 +1,11 @@
+easyblock = 'Bundle'
+name = 'R-bundle-ggsurvfit'
+version = '1.1.0'
+homepage = 'https://www.r-project.org/'
+description = 'Bundle of R packages from CRAN'
+toolchain = {'name': 'foss', 'version': '2024a'}
+exts_defaultclass = 'RPackage'
+exts_list = [
+    ('ggsurvfit', '1.1.0'),
+]
+moduleclass = 'lang'
