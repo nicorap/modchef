@@ -40,13 +40,20 @@ def _ensure_configured():
         configure_easybuild()
 
 
-def _ecosystem_for(name, easyblock):
-    """Classify extension packages as 'python' or 'r' (None if unknown)."""
+def _ecosystem_for(name, easyblock, exts_defaultclass=""):
+    """Classify a module's extension packages as 'python' or 'r' (None if unknown).
+
+    The most reliable signal is the bundle's exts_defaultclass (RPackage /
+    PythonPackage); fall back to the easyblock and name. Without this, R bundles
+    other than CRAN/Bioconductor (e.g. R-bundle-ggsurvfit, easyblock 'Bundle')
+    were classified as None and their extensions never indexed.
+    """
     eb = (easyblock or "").lower()
     nm = (name or "").lower()
-    if "python" in eb or nm in ("python", "scipy-bundle"):
+    edc = (exts_defaultclass or "").lower()
+    if edc == "pythonpackage" or "python" in eb or nm in ("python", "scipy-bundle"):
         return "python"
-    if eb.startswith("r") or nm in ("r", "r-bundle-cran", "r-bundle-bioconductor"):
+    if edc == "rpackage" or eb.startswith("r") or nm == "r" or nm.startswith("r-bundle"):
         return "r"
     return None
 
@@ -82,7 +89,7 @@ def parse_easyconfig(path) -> ModuleFacts:
             continue   # build deps are not part of a runtime recipe
         deps.append(d["full_mod_name"])
 
-    ecosystem = _ecosystem_for(name, ec["easyblock"])
+    ecosystem = _ecosystem_for(name, ec["easyblock"], ec["exts_defaultclass"])
     packages = []
     for ext in ec["exts_list"]:
         ext_name = ext if isinstance(ext, str) else ext[0]
