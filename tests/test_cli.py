@@ -134,6 +134,15 @@ def test_cook_unification_suggestion_and_exit_zero(capsys):
     assert "to unify" in captured.err.lower()
     assert "ToolX/2.0-GCC-13.2.0" in captured.err
 
+def test_cook_missing_recipe_file_errors_cleanly(capsys):
+    # `modchef cook ggsurvfit` (a bare word, not a file) must not crash with a
+    # traceback; it should report a clean error and hint at the flags.
+    rc = cli.main(["cook", "ggsurvfit", "--graph", FIX_TTL])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "ggsurvfit" in captured.err
+    assert "--tools" in captured.err  # hint at the intended usage
+
 def test_cook_minimal_by_default(capsys):
     cli.main(["cook", "--tools", "samtools", "--graph", FIX_TTL])
     out = capsys.readouterr().out

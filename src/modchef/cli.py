@@ -43,6 +43,12 @@ def _cmd_cook(args):
     if g is None:
         return 1
     if args.recipe_file:
+        if not os.path.exists(args.recipe_file):
+            print(f"modchef: recipe file not found: {args.recipe_file}",
+                  file=sys.stderr)
+            print(f"  to request software directly, use a flag, e.g. "
+                  f"modchef cook --tools {args.recipe_file}", file=sys.stderr)
+            return 1
         rec = recipe.load_recipe(args.recipe_file)
     else:
         rec = recipe.from_flags(name=args.name, tools=args.tools,
