@@ -80,14 +80,69 @@ def _reason(ing):
     return f"requested {ing.kind}: {ing.name}"
 
 
-def _expand_full(graph, chosen_for, cluster):
-    """Emit every chosen module plus its full transitive deps (deps first)."""
-    seen = set()
+def _group_chosen(graph, chosen_for):
+    """Dedup `chosen_for` by full_name, computing each module's dep closure.
+
+    Returns `(order, reasons, covers)`: `order` is the deduped modules in
+    first-seen order, `reasons` maps full_name to its accumulated reason
+    strings, and `covers(other, m)` is True when `other`'s dependency closure
+    already carries `m` — either the exact module, or a *different version of
+    the same software*. Lmod resolves the latter with a same-name swap
+    regardless of which version modchef names explicitly, so an explicit load
+    for the losing version is dead weight: it never survives in the final
+    environment, and only produces a confusing "reloaded with a version
+    change" swap.
+    """
+    reasons = {}
+    order = []
+    closures = {}
+    closure_names = {}
     for chosen, ing in chosen_for:
-        cluster.reasons.setdefault(chosen.full_name, []).append(_reason(ing))
+        if chosen.full_name not in reasons:
+            reasons[chosen.full_name] = []
+            order.append(chosen)
+            closure = _dep_closure(graph, chosen)
+            closures[chosen.full_name] = closure
+            closure_names[chosen.full_name] = {full.split("/")[0] for full in closure}
+        reasons[chosen.full_name].append(_reason(ing))
+
+    def covers(other, m):
+        return (m.full_name in closures[other.full_name] or
+                m.name in closure_names[other.full_name])
+
+    return order, reasons, covers
+
+
+def _expand_full(graph, chosen_for, cluster):
+    """Emit every chosen module plus its full transitive deps (deps first).
+
+    Like `_minimize`, a chosen module is skipped when another chosen module's
+    closure already carries a different version of the same software: Lmod
+    would swap it away regardless, so listing both versions is actively
+    wrong, not merely redundant.
+    """
+    order, reasons, covers = _group_chosen(graph, chosen_for)
+    superseded = {m.full_name for m in order
+                  if any(covers(other, m) for other in order
+                         if other.full_name != m.full_name)}
+
+    seen = set()
+    for chosen in order:
+        if chosen.full_name in superseded:
+            continue
+        cluster.reasons.setdefault(chosen.full_name, []).extend(reasons[chosen.full_name])
         for mod in _resolve_deps(graph, chosen, seen):
             if mod not in cluster.modules:
                 cluster.modules.append(mod)
+
+    # fold superseded modules' reasons into a surviving root that covers them.
+    for m in order:
+        if m.full_name not in superseded:
+            continue
+        for r in order:
+            if r.full_name not in superseded and covers(r, m):
+                cluster.reasons.setdefault(r.full_name, []).extend(reasons[m.full_name])
+                break
 
 
 def _minimize(graph, chosen_for, cluster):
@@ -96,20 +151,11 @@ def _minimize(graph, chosen_for, cluster):
     `chosen_for` is a list of (ModuleRef, Ingredient) in covered order. Reasons
     for dropped modules merge into the surviving root that pulls them in.
     """
-    # reasons per chosen full_name, preserving first-seen order of modules
-    reasons = {}
-    order = []
-    closures = {}
-    for chosen, ing in chosen_for:
-        if chosen.full_name not in reasons:
-            reasons[chosen.full_name] = []
-            order.append(chosen)
-            closures[chosen.full_name] = _dep_closure(graph, chosen)
-        reasons[chosen.full_name].append(_reason(ing))
+    order, reasons, covers = _group_chosen(graph, chosen_for)
 
     roots = [m for m in order
-             if not any(m.full_name in closures[other.full_name]
-                        for other in order if other.full_name != m.full_name)]
+             if not any(covers(other, m) for other in order
+                        if other.full_name != m.full_name)]
 
     cluster.modules = list(roots)
     cluster.reasons = {r.full_name: list(reasons[r.full_name]) for r in roots}
@@ -121,7 +167,7 @@ def _minimize(graph, chosen_for, cluster):
         if m in roots:
             continue
         for r in roots:
-            if m.full_name in closures[r.full_name]:
+            if covers(r, m):
                 cluster.reasons[r.full_name].extend(reasons[m.full_name])
                 break
 

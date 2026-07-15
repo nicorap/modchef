@@ -186,6 +186,32 @@ def test_minimal_folds_transitive_chain(sample_graph):
     assert "requested tool: toolc" in reasons
 
 
+def test_minimal_drops_superseded_version(sample_graph):
+    # ToolG has two installed versions; ToolH hard-depends on the older one
+    # (ToolG/1.0). A direct 'toolg' request resolves to the newest (2.0), but
+    # since ToolH's closure already carries a *different version* of the same
+    # software, ToolG/2.0 is dead weight (Lmod would just swap it away) and
+    # must not appear.
+    result = solver.cook(sample_graph,
+                         [solver.Ingredient("tool", "toolg"),
+                          solver.Ingredient("tool", "toolh")])
+    assert len(result.clusters) == 1
+    cluster = result.clusters[0]
+    assert [m.full_name for m in cluster.modules] == ["ToolH/1.0-GCC-12.3.0"]
+    reasons = cluster.reasons["ToolH/1.0-GCC-12.3.0"]
+    assert "requested tool: toolg" in reasons
+    assert "requested tool: toolh" in reasons
+
+
+def test_full_drops_superseded_version(sample_graph):
+    # Same collision, but --full: must not emit both ToolG versions.
+    result = solver.cook(sample_graph,
+                         [solver.Ingredient("tool", "toolg"),
+                          solver.Ingredient("tool", "toolh")], full=True)
+    names = [m.full_name for c in result.clusters for m in c.modules]
+    assert names == ["ToolG/1.0-GCC-12.3.0", "ToolH/1.0-GCC-12.3.0"]
+
+
 def test_incompatible_generations_fall_back_to_two_clusters(sample_graph):
     # SAMtools is GCC-12.3.0; BWA is GCC-13.2.0 -> no common generation.
     result = solver.cook(sample_graph,

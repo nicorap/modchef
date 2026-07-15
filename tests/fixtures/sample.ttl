@@ -133,6 +133,38 @@
 <https://modchef.dev/r/sw-toolc> a mc:Software ;
     mc:name "toolc" .
 
+# Version-collision case (like scikit-learn/SHAP on the real cluster): ToolG
+# has two installed versions; ToolH hard-depends on the *older* one. Newest()
+# picks ToolG/2.0 for a direct 'toolg' request, but ToolH's closure only
+# carries ToolG/1.0 — a different full_name, same software.
+<https://modchef.dev/r/m-toolg-1-0-gcc-12-3-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-12-3-0> ;
+    mc:fullName "ToolG/1.0-GCC-12.3.0" ;
+    mc:name "ToolG" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-toolg> ;
+    mc:version "1.0" .
+
+<https://modchef.dev/r/m-toolg-2-0-gcc-12-3-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-12-3-0> ;
+    mc:fullName "ToolG/2.0-GCC-12.3.0" ;
+    mc:name "ToolG" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-toolg> ;
+    mc:version "2.0" .
+
+<https://modchef.dev/r/m-toolh-1-0-gcc-12-3-0> a mc:Module ;
+    mc:builtWith <https://modchef.dev/r/tc-gcc-12-3-0> ;
+    mc:dependsOn <https://modchef.dev/r/m-toolg-1-0-gcc-12-3-0> ;
+    mc:fullName "ToolH/1.0-GCC-12.3.0" ;
+    mc:name "ToolH" ;
+    mc:providesSoftware <https://modchef.dev/r/sw-toolh> ;
+    mc:version "1.0" .
+
+<https://modchef.dev/r/sw-toolg> a mc:Software ;
+    mc:name "toolg" .
+
+<https://modchef.dev/r/sw-toolh> a mc:Software ;
+    mc:name "toolh" .
+
 # --- installed/available tiers (installed-vs-available feature) ---
 
 # STAR: available in EasyBuild but NOT installed on this HPC
