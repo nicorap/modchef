@@ -9,6 +9,7 @@ description = "Cook EasyBuild environments from software ingredients."
 toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
 
 sources = ['modchef-%(version)s.tar.gz']
+checksums = ['0dae0c56c5a49d61d2f795438b8c2b541a61ab137a8ec64ec3eaebe2d9b7107a']
 
 dependencies = [
     ('Python', '3.11.3'),
