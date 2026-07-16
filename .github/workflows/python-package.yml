@@ -37,6 +37,12 @@ jobs:
   index:
     name: index (with EasyBuild)
     runs-on: ubuntu-latest
+    env:
+      # Ubuntu's lmod package ships no 'lmod' on $PATH, so EasyBuild's Lmod
+      # detection fails. It also looks at $LMOD_CMD, which is what
+      # /etc/profile.d/lmod.sh sets — but that never reaches a non-login
+      # `run:` shell, so set it explicitly.
+      LMOD_CMD: /usr/share/lmod/lmod/libexec/lmod
     strategy:
       fail-fast: false
       matrix:
@@ -55,5 +61,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -e ".[index,dev]"
+        # resolve_chain() needs real easyconfigs on the robot path to expand a
+        # toolchain into its hierarchy; on the HPC the admin user already has
+        # them, so they are not an [index] dependency.
+        python -m pip install easybuild-easyconfigs
     - name: Run EasyBuild-dependent tests
       run: pytest tests/test_indexer.py tests/test_toolchains.py -q
