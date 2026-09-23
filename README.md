@@ -55,14 +55,37 @@ The runtime CLI reads the graph from `$MODCHEF_TTL` (set by the module file).
 
 ## Deploying the module (EasyBuild, on the HPC as the EasyBuild admin user)
 
-modchef ships as an EasyBuild module built from `easybuild/modchef-1.0.0-GCCcore-12.3.0.eb`
-(toolchain `GCCcore/12.3.0`, so the installed module is `modchef/1.0.0-GCCcore-12.3.0`).
+Two easyconfigs ship in `easybuild/`, differing only in toolchain and dependency
+versions:
 
-1. Build the source tarball from a checkout and copy it plus the easyconfig to the HPC:
+| Easyconfig | Toolchain | Python |
+|---|---|---|
+| `modchef-1.0.0-GCCcore-12.3.0.eb` | GCCcore/12.3.0 | 3.11.3 |
+| `modchef-1.0.0-GCCcore-15.2.0.eb` | GCCcore/15.2.0 | 3.14.2 |
 
-        python -m build                       # writes dist/modchef-1.0.0.tar.gz
-        scp dist/modchef-1.0.0.tar.gz                   <admin>@<hpc>:/opt/easybuild/ebfiles_repo/
-        scp easybuild/modchef-1.0.0-GCCcore-12.3.0.eb   <admin>@<hpc>:/opt/easybuild/ebfiles_repo/
+Pick the one whose Python matches the rest of your interactive tooling —
+loading modchef beside a module built on a different Python puts two Pythons in
+one environment, and which one wins depends on load order.
+
+Both need two site-specific edits before installing:
+
+- **`modextravars = {'MODCHEF_TTL': ...}`** — where the `modchef-index` cron
+  writes the daily graph. Users must be able to read it, your EasyBuild admin
+  to write it.
+- **checksum** — the tarball is built from a checkout, so its bytes differ per
+  build and no published value can be correct for you. Generate yours with
+  `eb <easyconfig> --inject-checksums`. Once modchef is on PyPI you can instead
+  set `source_urls = [PYPI_SOURCE]` and pin the released hash.
+
+The installed module is named after the toolchain, e.g.
+`modchef/1.0.0-GCCcore-15.2.0`.
+
+1. Build the source tarball from a checkout and copy it plus your chosen
+   easyconfig to the HPC (`<eb>` below is the toolchain suffix you picked):
+
+        python -m build                   # writes dist/modchef-1.0.0.tar.gz
+        scp dist/modchef-1.0.0.tar.gz              <admin>@<hpc>:/opt/easybuild/ebfiles_repo/
+        scp easybuild/modchef-1.0.0-<eb>.eb        <admin>@<hpc>:/opt/easybuild/ebfiles_repo/
 
 2. EasyBuild caches sources by filename, so overwrite any stale copy in its sourcepath
    (`eb --show-config | grep sourcepath`) before reinstalling:
@@ -71,8 +94,8 @@ modchef ships as an EasyBuild module built from `easybuild/modchef-1.0.0-GCCcore
 
 3. Reinstall over the existing module and smoke-test:
 
-        eb /opt/easybuild/ebfiles_repo/modchef-1.0.0-GCCcore-12.3.0.eb --rebuild
-        module load modchef/1.0.0-GCCcore-12.3.0
+        eb /opt/easybuild/ebfiles_repo/modchef-1.0.0-<eb>.eb --rebuild
+        module load modchef/1.0.0-<eb>
         modchef --help
         modchef-index --help | grep official-repo
 

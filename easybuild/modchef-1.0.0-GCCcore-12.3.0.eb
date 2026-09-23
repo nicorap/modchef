@@ -3,7 +3,7 @@ easyblock = 'PythonPackage'
 name = 'modchef'
 version = '1.0.0'
 
-homepage = 'https://modchef.dev'
+homepage = 'https://github.com/nicorap/modchef'
 description = "Cook EasyBuild environments from software ingredients."
 
 toolchain = {'name': 'GCCcore', 'version': '12.3.0'}
