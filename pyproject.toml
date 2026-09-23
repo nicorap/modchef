@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "Nicolas Rapin" }]
+authors = [{ name = "Nicolas Rapin", email = "kuikuisven@gmail.com" }]
 keywords = ["easybuild", "lmod", "hpc", "modules", "rdf"]
 dependencies = ["rdflib>=6.0", "PyYAML>=5.4"]
 classifiers = [
