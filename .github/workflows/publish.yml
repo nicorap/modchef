@@ -1,0 +1,70 @@
+# Publishes modchef to PyPI via Trusted Publishing (OIDC) — no API token is
+# stored anywhere. PyPI verifies the workflow's identity against a publisher
+# registered at https://pypi.org/manage/project/modchef/settings/publishing/
+# (owner: nicorap, repo: modchef, workflow: publish.yml, environment: pypi).
+#
+# Release flow:
+#   git tag v1.0.0 && git push origin v1.0.0
+# Tag pushes build and publish. Running the workflow manually builds and
+# uploads the artifact only, so you can inspect a dist without releasing it.
+
+name: publish
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Build sdist and wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build
+    - name: Check metadata renders on PyPI
+      run: |
+        python -m pip install twine
+        python -m twine check dist/*
+    - name: Verify tag matches the project version
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        # A tag that disagrees with pyproject.toml would publish a surprise
+        # version, and PyPI releases cannot be overwritten. Fail loudly first.
+        version=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+        tag="${GITHUB_REF_NAME#v}"
+        if [ "$version" != "$tag" ]; then
+          echo "::error::tag v$tag does not match pyproject.toml version $version"
+          exit 1
+        fi
+        echo "tag and version agree: $version"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/modchef
+    permissions:
+      id-token: write        # required for Trusted Publishing
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+    - uses: pypa/gh-action-pypi-publish@release/v1

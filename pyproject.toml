@@ -1,13 +1,41 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "modchef"
 version = "1.0.0"
 description = "Cook EasyBuild environments from software ingredients."
+readme = "README.md"
 requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nicolas Rapin" }]
+keywords = ["easybuild", "lmod", "hpc", "modules", "rdf"]
 dependencies = ["rdflib>=6.0", "PyYAML>=5.4"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Systems Administration",
+]
+
+[project.urls]
+Homepage = "https://github.com/nicorap/modchef"
+Repository = "https://github.com/nicorap/modchef"
+Issues = "https://github.com/nicorap/modchef/issues"
+Documentation = "https://github.com/nicorap/modchef/blob/main/docs/user-guide.md"
 
 [project.optional-dependencies]
 index = ["easybuild-framework", "easybuild-easyblocks"]
