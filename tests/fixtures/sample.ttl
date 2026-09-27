@@ -270,3 +270,46 @@
 <https://modchef.dev/r/sw-tooly> a mc:Software ;
     mc:name "tooly" .
 
+
+# --- build deps + easyconfig paths (build-scheduling feature) ---
+# BuildTool is a BUILD-ONLY dep of two not-installed consumers. A build
+# scheduler must see it as shared; `modchef cook` must never emit it, because it
+# is absent at runtime.
+<https://modchef.dev/r/m-buildtool-2-0-gcccore-12-3-0> a mc:Module ;
+    mc:name "BuildTool" ;
+    mc:version "2.0" ;
+    mc:fullName "BuildTool/2.0-GCCcore-12.3.0" ;
+    mc:installed false ;
+    mc:easyconfigPath "/site/easyconfigs/b/BuildTool/BuildTool-2.0-GCCcore-12.3.0.eb" ;
+    mc:builtWith <https://modchef.dev/r/tc-gcccore-12-3-0> ;
+    mc:providesSoftware <https://modchef.dev/r/sw-buildtool> .
+
+<https://modchef.dev/r/sw-buildtool> a mc:Software ;
+    mc:name "buildtool" .
+
+<https://modchef.dev/r/m-consumerone-1-0-gcccore-12-3-0> a mc:Module ;
+    mc:name "ConsumerOne" ;
+    mc:version "1.0" ;
+    mc:fullName "ConsumerOne/1.0-GCCcore-12.3.0" ;
+    mc:installed false ;
+    mc:easyconfigPath "/site/easyconfigs/c/ConsumerOne/ConsumerOne-1.0-GCCcore-12.3.0.eb" ;
+    mc:builtWith <https://modchef.dev/r/tc-gcccore-12-3-0> ;
+    mc:buildDependsOn <https://modchef.dev/r/m-buildtool-2-0-gcccore-12-3-0> ;
+    mc:dependsOn <https://modchef.dev/r/m-zlib-1-2-13-gcccore-12-3-0> ;
+    mc:providesSoftware <https://modchef.dev/r/sw-consumerone> .
+
+<https://modchef.dev/r/sw-consumerone> a mc:Software ;
+    mc:name "consumerone" .
+
+<https://modchef.dev/r/m-consumertwo-1-0-gcccore-12-3-0> a mc:Module ;
+    mc:name "ConsumerTwo" ;
+    mc:version "1.0" ;
+    mc:fullName "ConsumerTwo/1.0-GCCcore-12.3.0" ;
+    mc:installed false ;
+    mc:easyconfigPath "/site/easyconfigs/c/ConsumerTwo/ConsumerTwo-1.0-GCCcore-12.3.0.eb" ;
+    mc:builtWith <https://modchef.dev/r/tc-gcccore-12-3-0> ;
+    mc:buildDependsOn <https://modchef.dev/r/m-buildtool-2-0-gcccore-12-3-0> ;
+    mc:providesSoftware <https://modchef.dev/r/sw-consumertwo> .
+
+<https://modchef.dev/r/sw-consumertwo> a mc:Software ;
+    mc:name "consumertwo" .
