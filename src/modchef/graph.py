@@ -15,6 +15,9 @@ class ModuleRef:
     version: str
     toolchain_id: Optional[str]
     installed: bool = True
+    # Absolute path of the easyconfig, when the graph recorded one. Needed by
+    # anything that BUILDS a module rather than loading it.
+    easyconfig_path: Optional[str] = None
 
 
 class ModChefGraph:
@@ -55,6 +58,10 @@ class ModChefGraph:
             version=str(self.g.value(m_uri, schema.MC.version)),
             toolchain_id=self._tc_id(tc_uri) if tc_uri else None,
             installed=inst.toPython() if inst is not None else True,
+            easyconfig_path=(
+                str(ecp) if (ecp := self.g.value(m_uri, schema.MC.easyconfigPath))
+                else None
+            ),
         )
 
     def modules_providing(self, ingredient, kind):
@@ -98,6 +105,54 @@ class ModChefGraph:
                 deps.append(ModuleRef(str(d), str(full), str(full).split("/")[0],
                                       "", None))
         return deps
+
+    def build_dependencies_of(self, module_uri):
+        """Build-only deps (mc:buildDependsOn). Absent at runtime, REQUIRED
+        before the recipe can compile."""
+        from rdflib import URIRef
+        deps = []
+        for d in self.g.objects(URIRef(module_uri), schema.MC.buildDependsOn):
+            full = self.g.value(d, schema.MC.fullName)
+            if full:
+                deps.append(ModuleRef(str(d), str(full), str(full).split("/")[0],
+                                      "", None))
+        return deps
+
+    def all_dependencies_of(self, module_uri):
+        """Runtime AND build deps, deduped by full_name.
+
+        This is the edge set a BUILD SCHEDULER must use. Using runtime deps only
+        (mc:dependsOn) misses build deps, which is how several jobs end up
+        discovering the same unbuilt dependency at once and serialising on its
+        lock -- each holding a node while doing nothing.
+        """
+        seen = {}
+        for d in self.dependencies_of(module_uri) + self.build_dependencies_of(module_uri):
+            seen.setdefault(d.full_name, d)
+        return list(seen.values())
+
+    def build_closure(self, module_uri, include_installed=False):
+        """Transitive closure over runtime+build deps, as {full_name: ModuleRef}.
+
+        Cycles are impossible in a valid easyconfig graph but the walk is guarded
+        anyway: a malformed pair of recipes must not hang a cron job.
+        """
+        out = {}
+        stack = [module_uri]
+        seen_uris = set()
+        while stack:
+            u = stack.pop()
+            if u in seen_uris:
+                continue
+            seen_uris.add(u)
+            for d in self.all_dependencies_of(u):
+                if d.full_name in out:
+                    continue
+                ref = self.modules_by_full_name(d.full_name) or d
+                if include_installed or not ref.installed:
+                    out[d.full_name] = ref
+                stack.append(ref.uri)
+        return out
 
     def compatible_toolchains(self, tc_id):
         return toolchains.ancestors(tc_id, self._sub_hierarchy)

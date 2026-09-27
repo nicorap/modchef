@@ -69,6 +69,15 @@ class ModuleFacts:
     full_name: str
     dependencies: list = field(default_factory=list)   # [full_mod_name, ...]
     packages: list = field(default_factory=list)       # [(pkg_name, ecosystem)]
+    # Build-only dependencies, kept SEPARATE from `dependencies` so runtime
+    # queries are unaffected. A build dep is absent at runtime but must exist
+    # before the recipe can compile, which makes it exactly what a BUILD
+    # SCHEDULER needs and exactly what a `module load` plan must omit.
+    build_dependencies: list = field(default_factory=list)  # [full_mod_name, ...]
+    # Absolute path of the easyconfig these facts came from. The graph is keyed
+    # by module full_name, but anything that wants to BUILD a module needs the
+    # .eb file to hand to EasyBuild.
+    easyconfig_path: str = ""
 
 
 def parse_easyconfig(path) -> ModuleFacts:
@@ -82,11 +91,19 @@ def parse_easyconfig(path) -> ModuleFacts:
         name, version, tc["name"], tc["version"], versionsuffix)
 
     deps = []
+    build_deps = []
     for d in ec.dependencies():
         if d.get("external_module"):
             continue
         if d.get("build_only"):
-            continue   # build deps are not part of a runtime recipe
+            # Build deps are NOT part of a runtime recipe, so they stay out of
+            # `dependencies` and out of mc:dependsOn -- `modchef cook` must keep
+            # emitting runtime-only module loads. They are recorded separately
+            # because build ORDER depends on them: a build scheduler that
+            # ignores them lets several jobs discover the same unbuilt build dep
+            # concurrently and fight over its lock.
+            build_deps.append(d["full_mod_name"])
+            continue
         deps.append(d["full_mod_name"])
 
     ecosystem = _ecosystem_for(name, ec["easyblock"], ec["exts_defaultclass"])
@@ -116,6 +133,7 @@ def parse_easyconfig(path) -> ModuleFacts:
         toolchain_name=tc["name"], toolchain_version=tc["version"],
         moduleclass=ec["moduleclass"] or "", full_name=full_name,
         dependencies=deps, packages=packages,
+        build_dependencies=build_deps, easyconfig_path=os.path.abspath(str(path)),
     )
 
 
@@ -143,12 +161,22 @@ def _add_facts(g, facts, installed=True):
         g.add((t, schema.MC.toolchainId, Literal(tc_id)))
         g.add((m, schema.MC.builtWith, t))
 
+    if facts.easyconfig_path:
+        g.add((m, schema.MC.easyconfigPath, Literal(facts.easyconfig_path)))
+
     for dep_full in facts.dependencies:
         d = schema.module_uri(dep_full)
         # If the dependency is itself indexed, this URI already carries its full
         # facts; otherwise we record at least its fullName so recipes can load it.
         g.add((d, schema.MC.fullName, Literal(dep_full)))
         g.add((m, schema.MC.dependsOn, d))
+
+    # Separate predicate, never mc:dependsOn: a build dep must not leak into a
+    # runtime `module load` plan.
+    for dep_full in facts.build_dependencies:
+        d = schema.module_uri(dep_full)
+        g.add((d, schema.MC.fullName, Literal(dep_full)))
+        g.add((m, schema.MC.buildDependsOn, d))
 
     for pkg_name, ecosystem in facts.packages:
         p = schema.package_uri(pkg_name, ecosystem)
